@@ -8,7 +8,7 @@ X_oe = [7000, 0.2, 45, 0, 270, 78.75]
 
 DSN0_loc = [35.297, -116.914] #lat(deg), long(deg)
 DSN1_loc = [40.4311, -4.248]
-DSN2_loc = [-35.4023, -148.9813]
+DSN2_loc = [-35.4023, 148.9813]
 
 R_Earth = 6378.137 #km
 omega_EN = 7.292115e-5 #rad/sec
@@ -57,7 +57,7 @@ write_to_csv(DSN0_data,"DSN0_data.csv")
 write_to_csv(DSN1_data,"DSN1_data.csv")
 write_to_csv(DSN2_data,"DSN2_data.csv")
 
-## 1(a) plotting
+## 1(e) plotting
 
 DSN_list = [DSN0_data, DSN1_data, DSN2_data]
 colors = ["tab:green", "tab:orange", "tab:blue"]
