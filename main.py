@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-## Givens/problem statement
+## Givens and universal constants
 
 X_oe = [7000, 0.2, 45, 0, 270, 78.75] 
 #a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
+mu = 3.986e5 #km^3/s^2
 
 DSN0_loc = [35.297, -116.914] #lat(deg), long(deg)
 DSN1_loc = [40.4311, -4.248]
