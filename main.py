@@ -12,6 +12,7 @@ X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
 X_oe_rad = X_oe.copy()
 X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
 x_hat = orbital_elements_to_state(X_oe_rad)
+print("OE conversion x_hat:", x_hat)
 
 sigma_r0 = 10.0 # km
 sigma_v0 = 0.01 # km/s
@@ -134,5 +135,4 @@ x0_blls, P0_blls, dx0 = blls_x0(
     H_func=H_func,
     t_window=50.0
 )
-print("BLLS dx0:", dx0)
 print("BLLS x0:", x0_blls)
