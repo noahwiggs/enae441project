@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from stations import stations_eci_func
-from scipy.integrate import solve_ivp
 
 def integrator(X_dot_fcn, X_0, t_vec):
     from scipy.integrate import solve_ivp
@@ -102,7 +101,7 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
     P_minus_vec  = np.zeros((length, 6, 6))
     meas = np.load("Project-Measurements-Easy.npy")
     mu = 3.986e5
-    
+
     mu_plus_vec[0] = mu0
     P_plus_vec[0]  = P0
 
