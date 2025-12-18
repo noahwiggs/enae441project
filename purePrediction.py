@@ -7,8 +7,8 @@ def integrator(X_dot_fcn, X_0, t_vec):
     from scipy.integrate import solve_ivp
     t_span = [t_vec[0], t_vec[-1]]
     t_eval = t_vec
-    sol = solve_ivp(X_dot_fcn, t_span, X_0, t_eval=t_eval, rtol=1e-9, atol=1e-9,)
-    return sol.y    
+    sol = solve_ivp(X_dot_fcn, t_span, y0=np.asarray(X_0, dtype = float), t_eval=t_eval, method = "RK45", rtol=1e-9, atol=1e-9,)
+    return np.asarray(sol.y)    
 
 def propagate_LTV_system_numerically(X_0, x_dot_fcn, A_fcn, t_vec):
     # Return trajectory and STM over time where
@@ -155,7 +155,6 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
 
         mu_plus = mu_minus + K @ innov
 
-        # Joseph form (recommended)
         P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + K @ Rk @ K.T
 
         mu_plus_vec[k+1] = mu_plus

@@ -5,6 +5,8 @@ from stations import stations_eci_func
 from dynamics import propagate_func
 from measurements import meas_func, H_func
 from blls_init import blls_x0
+
+
 ## Givens/problem statement
 
 X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
@@ -136,3 +138,41 @@ x0_blls, P0_blls, dx0 = blls_x0(
     t_window=50.0
 )
 print("BLLS x0:", x0_blls)
+
+###########################################################
+## ================== Pure Prediction ================== ##
+###########################################################
+from purePrediction import run_EKF
+meas = np.load("Project-Measurements-Easy.npy")
+length = meas.shape[0]
+
+Q = np.block([
+    [1e-5*np.eye(3), np.zeros((3,3))],
+    [np.zeros((3,3)), 1e-7*np.eye(3)]
+])
+
+R = np.diag([1e-3**2, 1e-5**2])
+mu0 = np.array([
+    4.48528055e+03, -1.26238277e+03,  4.48527073e+03,
+    2.15123949e+00,  7.55370288e+00,  2.15134590e+00
+], dtype=float)
+
+P0 = np.block([
+    [50.0*np.eye(3), np.zeros((3,3))],
+    [np.zeros((3,3)), 0.1*np.eye(3)]
+])
+results = run_EKF(
+    length=length,
+    y=None,
+    mu0=mu0,
+    P0=P0,
+    F=None,
+    H=None,
+    Q=Q,
+    R=R
+)
+#from purePrediction import plot_pure_prediction
+#plot_pure_prediction("Project-Measurements-Easy.npy")
+
+
+
