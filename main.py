@@ -13,11 +13,11 @@ X_oe_rad = X_oe.copy()
 X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
 x_hat = orbital_elements_to_state(X_oe_rad)
 
-sigma_r0 = 10.0   # km
-sigma_v0 = 0.01   # km/s
+sigma_r0 = 10.0 # km
+sigma_v0 = 0.01 # km/s
 P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
 
-sigma_rho    = 1e-3  # km
+sigma_rho = 1e-3  # km
 sigma_rhodot = 1e-5  # km/s
 R = np.diag([sigma_rho**2, sigma_rhodot**2])
 
