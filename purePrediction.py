@@ -2,6 +2,60 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from stations import stations_eci_func
+from scipy.integrate import solve_ivp
+
+def integrator(X_dot_fcn, X_0, t_vec):
+    from scipy.integrate import solve_ivp
+    t_span = [t_vec[0], t_vec[-1]]
+    t_eval = t_vec
+    sol = solve_ivp(X_dot_fcn, t_span, X_0, t_eval=t_eval, rtol=1e-9, atol=1e-9,)
+    return sol.y    
+
+def propagate_LTV_system_numerically(X_0, x_dot_fcn, A_fcn, t_vec):
+    # Return trajectory and STM over time where
+    # np.shape(X_t_vec) = (len(t_vec), len(X_0))
+    # np.shape(phi_t_vec) = (len(t_vec), len(X_0), len(X_0))
+    N = 6
+    phi_0 = np.eye(N).flatten()
+    Z_0 = np.concatenate((X_0, phi_0))
+    
+    def Z_fcn(t, Z):
+        x=Z[0:N]
+        phi=Z[N:].reshape(N,N)
+
+        x_dot = x_dot_fcn(t,x)
+        A = A_fcn(x)
+
+        phi_dot = (A @ phi).flatten()
+        return np.concatenate((x_dot, phi_dot))
+
+    Z_t = integrator(Z_fcn, Z_0, t_vec)
+    X_t_vec = Z_t[:N, :].T
+    phi_t_vec = Z_t[N:, :].T.reshape(len(t_vec), N, N)
+    
+    return X_t_vec, phi_t_vec
+
+def xdot_2bp(t, x, mu):
+    r = x[0:3]
+    v = x[3:6]
+    rnorm = np.linalg.norm(r)
+    a = -mu * r / (rnorm**3)
+    return np.hstack((v, a))
+
+def A_2bp(x, mu):
+    r = x[0:3]
+    rnorm = np.linalg.norm(r)
+    I3 = np.eye(3)
+    rrT = np.outer(r, r)
+    dadr = -mu * (I3/(rnorm**3) - 3.0*rrT/(rnorm**5))  # ∂a/∂r
+
+    Z3 = np.zeros((3,3))
+    A = np.block([
+        [Z3, I3],
+        [dadr, Z3]
+    ])
+    return A
+
 
 def h_rho_rhodot(x, t, site_id):
     r = x[0:3]
@@ -14,8 +68,25 @@ def h_rho_rhodot(x, t, site_id):
 
     rho = np.linalg.norm(dr)
     rhodot = (dr @ dv) / rho
-
     return np.array([rho, rhodot])
+
+def H_rho_rhodot(x, t, site_id):
+    r = x[0:3]
+    v = x[3:6]
+    rs, vs = stations_eci_func(t, site_id)
+
+    d = r - rs
+    w = v - vs
+    rho = np.linalg.norm(d)
+    u = d / rho
+    rhodot = (d @ w) / rho
+
+    H = np.zeros((2,6))
+    H[0,0:3] = u
+    H[1,0:3] = (w - rhodot*u) / rho
+    H[1,3:6] = u
+    return H
+
 def load_numpy_data(file_path):
     import os
     cur_dir = os.path.dirname(os.path.abspath(__file__)) + "/"
@@ -29,27 +100,64 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
     P_plus_vec = np.zeros((length + 1, 6, 6))
     mu_minus_vec = np.zeros((length, 6))
     P_minus_vec  = np.zeros((length, 6, 6))
-
+    meas = np.load("Project-Measurements-Easy.npy")
+    mu = 3.986e5
+    
     mu_plus_vec[0] = mu0
     P_plus_vec[0]  = P0
 
+    I6 = np.eye(6)
     t_start = time.time()
 
     for k in range(length):
         mu_prev = mu_plus_vec[k]
-        P_prev = P_plus_vec[k]
-        
-        # Predict
-        mu_minus = F @ mu_prev
-        P_minus = F @ P_prev @ F.T + Q
+        P_prev  = P_plus_vec[k]
+
+        # measurement time for this step
+        t_k = float(meas[k, 0])
+        i_k = int(meas[k, 1])
+        y_k = meas[k, 2:4]  # [rho, rhodot]
+
+        # ---------------- Predict: propagate state + STM ----------------
+        # Use a small t_vec over [t_k, t_{k+1}] if you have times;
+        # If meas has irregular times, use t_{k} -> t_{k+1}.
+        # Here we assume meas[k] corresponds to time t_k and we propagate from t_{k-1} to t_k.
+        # So define t_prev:
+        if k == 0:
+            t_prev = t_k
+        else:
+            t_prev = float(meas[k-1, 0])
+
+        t_vec = [t_prev, t_k]
+
+        x_dot_fcn = lambda t, x: xdot_2bp(t, x, mu)
+        A_fcn     = lambda x: A_2bp(x, mu)
+
+        X_t_vec, phi_t_vec = propagate_LTV_system_numerically(mu_prev, x_dot_fcn, A_fcn, t_vec)
+
+        mu_minus = X_t_vec[-1]
+        Fk = phi_t_vec[-1] # STM from t_prev -> t_k
+
+        Qk = Q(k) if callable(Q) else Q
+        P_minus = Fk @ P_prev @ Fk.T + Qk
 
         mu_minus_vec[k] = mu_minus
         P_minus_vec[k]  = P_minus
 
-        # Correct
-        K = P_minus @ H.T @ np.linalg.inv(H @ P_minus @ H.T + R)
-        mu_plus = mu_minus + K @ (y[k] - H @ mu_minus)
-        P_plus = (np.eye(6) - K@H) @ P_minus 
+        # Correct: nonlinear measurement 
+        z_hat = h_rho_rhodot(mu_minus, t_k, i_k)
+        Hk = H_rho_rhodot(mu_minus, t_k, i_k)
+
+        Rk = R(k) if callable(R) else R
+        S = Hk @ P_minus @ Hk.T + Rk
+        K = P_minus @ Hk.T @ np.linalg.inv(S)
+
+        innov = y_k - z_hat
+
+        mu_plus = mu_minus + K @ innov
+
+        # Joseph form (recommended)
+        P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + K @ Rk @ K.T
 
         mu_plus_vec[k+1] = mu_plus
         P_plus_vec[k+1]  = P_plus
