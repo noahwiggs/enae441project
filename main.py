@@ -1,21 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from orbits import orbital_elements_to_state
+from stations import stations_eci_func
+from dynamics import propagate_func
+from measurements import meas_func, H_func
+from blls_init import blls_x0
+## Givens/problem statement
 
-## Givens and universal constants
-
-X_oe = [7000, 0.2, 45, 0, 270, 78.75] 
+X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
 #a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
-mu = 3.986e5 #km^3/s^2
+X_oe_rad = X_oe.copy()
+X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
+x_hat = orbital_elements_to_state(X_oe_rad)
 
-DSN0_loc = [35.297, -116.914] #lat(deg), long(deg)
-DSN1_loc = [40.4311, -4.248]
-DSN2_loc = [-35.4023, 148.9813]
+sigma_r0 = 10.0   # km
+sigma_v0 = 0.01   # km/s
+P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
 
-R_Earth = 6378.137 #km
-omega_EN = 7.292115e-5 #rad/sec
-gamma_0 = 0 #deg
+sigma_rho    = 1e-3  # km
+sigma_rhodot = 1e-5  # km/s
+R = np.diag([sigma_rho**2, sigma_rhodot**2])
 
-## Extract/present data
+##################################################################
+## =================== Extract/present data =================== ##
+##################################################################
 
 def load_numpy_data(file_path):
     import os
@@ -32,6 +40,7 @@ def write_to_csv(arr, filename):
     np.savetxt(filename, arr, delimiter=",", fmt="%.10f", header=header, comments="")
 
 raw_data = load_numpy_data('Project-Measurements-Easy.npy')
+
 N = raw_data.shape[0]
 
 DSN0_data = []
@@ -58,7 +67,9 @@ write_to_csv(DSN0_data,"DSN0_data.csv")
 write_to_csv(DSN1_data,"DSN1_data.csv")
 write_to_csv(DSN2_data,"DSN2_data.csv")
 
-## 1(e) plotting
+###########################################################
+## =================== 1(e) Plotting =================== ##
+###########################################################
 
 DSN_list = [DSN0_data, DSN1_data, DSN2_data]
 colors = ["tab:green", "tab:orange", "tab:blue"]
@@ -109,56 +120,19 @@ fig1.tight_layout()
 fig2.tight_layout()
 plt.show()
 
-## 3(a) Initializing x0 p0 R and q
-## Functions OE >> State
-def orbital_elements_to_state(oe):
-    a, e, i, omega, Omega, f = oe
-    # Semilatus rectum
-    p = a * (1.0 - e**2)
-    # Radius
-    r_pf = p / (1.0 + e * np.cos(f))
-    # Perifocal position and velocity
-    r_PF = np.array([r_pf * np.cos(f), r_pf * np.sin(f), 0.0])
-    v_PF = np.sqrt(mu / p) * np.array([-np.sin(f), e + np.cos(f), 0.0])
-
-    # Rotation from PF to inertial: R3(Omega)*R1(i)*R3(omega)
-    cO = np.cos(Omega); sO = np.sin(Omega)
-    co = np.cos(omega); so = np.sin(omega)
-    ci = np.cos(i);     si = np.sin(i)
-
-    R3_O = np.array([[ cO, -sO, 0.0],
-                     [ sO,  cO, 0.0],
-                     [0.0, 0.0, 1.0]])
-    R1_i = np.array([[1.0, 0.0, 0.0],
-                     [0.0,  ci, -si],
-                     [0.0,  si,  ci]])
-    R3_o = np.array([[ co, -so, 0.0],
-                     [ so,  co, 0.0],
-                     [0.0, 0.0, 1.0]])
-
-    Q = R3_O @ R1_i @ R3_o
-
-    r_N = Q @ r_PF
-    v_N = Q @ v_PF
-    X_N = np.hstack((r_N, v_N))
-    return X_N
-    
-# --- x0 from the given OE (deg -> rad) ---
-oe_deg = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype=float)
-oe = oe_deg.copy()
-oe[2:] = np.deg2rad(oe[2:])          
-x_hat = orbital_elements_to_state(oe) # 6x1 state (km, km/s)
-
-# --- P0 ---
-sigma_r0 = 10.0 # km
-sigma_v0 = 0.01 # km/s  
-P = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
-
-# --- R ---
-sigma_rho    = 1e-3 # km 
-sigma_rhodot = 1e-5 # km/s 
-R = np.diag([sigma_rho**2, sigma_rhodot**2])
-
-# --- Process noise strength ---
-sigma_a = 1e-7 # km/s^2 
-q_a = sigma_a**2
+###########################################################
+## =========== 3(a) Initial Guess using BLLS =========== ##
+###########################################################
+x0_blls, P0_blls, dx0 = blls_x0(
+    raw_data=raw_data,
+    x0_nom=x_hat,
+    P0_nom=P0,
+    R_meas=R,
+    stations_eci_func=stations_eci_func,
+    propagate_func=propagate_func,
+    meas_func=meas_func,
+    H_func=H_func,
+    t_window=50.0
+)
+print("BLLS dx0:", dx0)
+print("BLLS x0:", x0_blls)
