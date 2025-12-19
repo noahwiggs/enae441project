@@ -116,7 +116,7 @@ def run_EKF(length, mu0, P0, a, Rk):
     t_start = time.time()
     t_prev = float(meas[0,0])
 
-    for k in range(length):
+    for k in range(1, length):
         mu_prev = mu_plus_vec[k]
         P_prev  = P_plus_vec[k]
 
