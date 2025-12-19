@@ -163,7 +163,7 @@ def run_EKF(length, mu0, P0, a, Rk):
         mu_plus = mu_minus + K @ (y_k - y_hat)
 
        
-        P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + np.outer(K,K) @ Rk
+        P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + K @ Rk @ K.T
 
         mu_plus_vec[k+1] = mu_plus
         P_plus_vec[k+1]  = P_plus

@@ -16,13 +16,6 @@ X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
 x_hat = orbital_elements_to_state(X_oe_rad)
 print("OE conversion x_hat:", x_hat)
 
-sigma_r0 = 10.0 # km
-sigma_v0 = 0.01 # km/s
-P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
-
-sigma_rho = 1e-3  # km
-sigma_rhodot = 1e-5  # km/s
-R = np.diag([sigma_rho**2, sigma_rhodot**2])
 
 ##################################################################
 ## =================== Extract/present data =================== ##
@@ -125,11 +118,20 @@ fig2.tight_layout()
 ###########################################################
 ## =========== 3(a) Initial Guess using BLLS =========== ##
 ###########################################################
+
+sigma_r0 = 10.0 # km
+sigma_v0 = 0.01 # km/s
+P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
+
+sigma_rho = 1e-3  # km
+sigma_rhodot = 1e-5  # km/s
+R_blls = np.diag([sigma_rho**2, sigma_rhodot**2])
+
 x0_blls, P0_blls, dx0 = blls_x0(
     raw_data=raw_data,
     x0_nom=x_hat,
     P0_nom=P0,
-    R_meas=R,
+    R_meas=R_blls,
     stations_eci_func=stations_eci_func,
     propagate_func=propagate_func,
     meas_func=meas_func,
@@ -148,8 +150,8 @@ length = meas.shape[0]
 
 a = 1e-9 #mm/s^2
 
-R = np.array([1e-3**2,0],
-             [0, 1e-5**2])
+R = np.block([[1e-3**2,0],
+             [0, 1e-5**2]])
 
 mu0 = np.array([
     4.48528055e+03, -1.26238277e+03,  4.48527073e+03,
