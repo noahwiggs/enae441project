@@ -49,10 +49,6 @@ def extract_present_data(raw_data):
     write_to_csv(DSN1_data,"DSN1_data.csv")
     write_to_csv(DSN2_data,"DSN2_data.csv")
 
-    ###########################################################
-    ## =================== 1(e) Plotting =================== ##
-    ###########################################################
-
     DSN_list = [DSN0_data, DSN1_data, DSN2_data]
     colors = ["tab:green", "tab:orange", "tab:blue"]
     labels = ["DSN0", "DSN1", "DSN2"]
@@ -126,7 +122,7 @@ def main():
     # Givens/load data
     X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
     #a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
-    
+
     raw_data = load_numpy_data('Project-Measurements-Easy.npy')
     length = raw_data.shape[0]
 
@@ -148,10 +144,11 @@ def main():
     P0 = P0_blls
 
     #Run filters and plot results from filters
-    from EKF import run_EKF_prediction_only, run_EKF, plot_pure_prediction, plot_with_updates
-    results_prediction = run_EKF_prediction_only(length, mu0, P0, a, R)
-    plot_pure_prediction(results_prediction)
+    # from EKF import run_EKF_prediction_only, plot_pure_prediction
+    # results_prediction = run_EKF_prediction_only(length, mu0, P0, a, R)
+    # plot_pure_prediction(results_prediction)
 
+    from EKF import run_EKF, plot_with_updates
     results_EKF = run_EKF(length, mu0, P0, a, R)
     plot_with_updates(results_EKF)
 

@@ -97,7 +97,7 @@ def load_numpy_data(file_path):
     print(f"Loaded data from {file_path}")
     return data
 ##############################################################################
-# def run_KF_prediction_only(length, mu0, P0, F, Q):
+# def run_EKF_prediction_only(length, mu0, P0, F, Q):
 #     mu_minus = np.zeros((length, 6))
 #     P_minus  = np.zeros((length, 6, 6))
 #     sigma_minus = np.zeros((length, 6))
