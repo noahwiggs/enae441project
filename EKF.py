@@ -66,10 +66,10 @@ def h_rho_rhodot(x, t, site_id):
     r = x[0:3]
     v = x[3:6]
 
-    rs, vs = stations_eci_func(t, site_id)
+    Rsite, Vsite = stations_eci_func(t, site_id)
 
-    dr = r - rs
-    dv = v - vs
+    dr = r - Rsite
+    dv = v - Vsite
 
     rho = np.linalg.norm(dr)
     rhodot = (dr @ dv) / rho
@@ -78,18 +78,15 @@ def h_rho_rhodot(x, t, site_id):
 def H_rho_rhodot(x, t, site_id):
     r = x[0:3]
     v = x[3:6]
-    rs, vs = stations_eci_func(t, site_id)
+    Rsite, Vsite = stations_eci_func(t, site_id)
 
-    d = r - rs
-    w = v - vs
-    rho = np.linalg.norm(d)
-    u = d / rho
-    rhodot = (d @ w) / rho
+    dr = r - Rsite
+    dv = v - Vsite
+    rho = np.linalg.norm(dr)
+    rhodot = (dr @ dv) / rho
 
-    H = np.zeros((2,6))
-    H[0,0:3] = u
-    H[1,0:3] = (w - rhodot*u) / rho
-    H[1,3:6] = u
+    H = np.block([[dr/rho, np.zeros((1,3))],
+                  [dv/rho, dr/rho]])
     return H
 
 def load_numpy_data(file_path):
@@ -99,14 +96,14 @@ def load_numpy_data(file_path):
     print(f"Loaded data from {file_path}")
     return data
 
-def run_EKF(length, mu0, P0, a, R):
+def run_EKF(length, mu0, P0, a, Rk):
 
     #Set up blank matricies
     mu_plus_vec = np.zeros((length + 1, 6))
     P_plus_vec = np.zeros((length + 1, 6, 6))
     mu_minus_vec = np.zeros((length, 6))
     P_minus_vec  = np.zeros((length, 6, 6))
-    
+
     meas = np.load("Project-Measurements-Easy.npy")
     mu = 3.986e5
 
@@ -158,18 +155,15 @@ def run_EKF(length, mu0, P0, a, R):
         P_minus_vec[k]  = P_minus
 
         # Correct: nonlinear measurement 
-        z_hat = h_rho_rhodot(mu_minus, t_k, i_k)
+        y_hat = h_rho_rhodot(mu_minus, t_k, i_k)
         Hk = H_rho_rhodot(mu_minus, t_k, i_k)
 
-        Rk = R(k) if callable(R) else R
-        S = Hk @ P_minus @ Hk.T + Rk
-        K = P_minus @ Hk.T @ np.linalg.inv(S)
+        K = P_minus @ Hk.T @ np.linalg.inv(Hk @ P_minus @ Hk.T + Rk)
 
-        innov = y_k - z_hat
+        mu_plus = mu_minus + K @ (y_k - y_hat)
 
-        mu_plus = mu_minus + K @ innov
-
-        P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + K @ Rk @ K.T
+        KRK = np.outer(K,K) * Rk
+        P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + KRK
 
         mu_plus_vec[k+1] = mu_plus
         P_plus_vec[k+1]  = P_plus
