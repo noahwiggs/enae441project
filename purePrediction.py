@@ -15,6 +15,13 @@ def propagate_LTV_system_numerically(X_0, x_dot_fcn, A_fcn, t_vec):
     # np.shape(X_t_vec) = (len(t_vec), len(X_0))
     # np.shape(phi_t_vec) = (len(t_vec), len(X_0), len(X_0))
     N = 6
+    t0 = float(t_vec[0])
+    tf = float(t_vec[-1])
+
+    if np.isclose(tf, t0):
+        X_t_vec = np.vstack([X_0, X_0])                # (2,6)
+        phi_t_vec = np.stack([np.eye(N), np.eye(N)])   # (2,6,6)
+        return X_t_vec, phi_t_vec
     phi_0 = np.eye(N).flatten()
     Z_0 = np.concatenate((X_0, phi_0))
     
