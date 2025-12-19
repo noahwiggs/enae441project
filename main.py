@@ -142,7 +142,7 @@ print("BLLS x0:", x0_blls)
 ###########################################################
 ## ================== Pure Prediction ================== ##
 ###########################################################
-from purePrediction import run_EKF
+from EKF import run_EKF
 meas = np.load("Project-Measurements-Easy.npy")
 length = meas.shape[0]
 
@@ -173,7 +173,7 @@ results = run_EKF(
     Q=Q,
     R=R
 )
-from purePrediction import plot_pure_prediction
+from EKF import plot_pure_prediction
 plot_pure_prediction(results)
 
 
