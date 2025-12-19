@@ -121,7 +121,6 @@ axs2[1].legend()
 
 fig1.tight_layout()
 fig2.tight_layout()
-plt.show()
 
 ###########################################################
 ## =========== 3(a) Initial Guess using BLLS =========== ##
@@ -141,7 +140,7 @@ print("BLLS x0:", x0_blls)
 print("BLLS P0: ", P0_blls)
 
 ###########################################################
-## ================== Pure Prediction ================== ##
+## ============ Extended Kalman Filter ================= ##
 ###########################################################
 from EKF import run_EKF
 meas = np.load("Project-Measurements-Easy.npy")
@@ -165,16 +164,16 @@ P0 = 0.5*(P0 + P0.T)   # enforce symmetry
 
 alpha = 1.0            # try 5.0 or 10.0 if needed
 P0 *= alpha**2
-results = run_EKF(
-    length=length,
-    mu0=mu0,
-    P0=P0,
-    a=a,
-    R=R
-)
+#run EKF
+results = run_EKF(length, mu0, P0, a, R)
+
+#plot EKF results
 from EKF import plot_pure_prediction
 plot_pure_prediction(results)
 
 
+from EKF import plot_with_updates
+plot_with_updates(results)
 
+plt.show()
 

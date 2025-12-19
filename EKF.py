@@ -106,6 +106,7 @@ def run_EKF(length, mu0, P0, a, R):
     P_plus_vec = np.zeros((length + 1, 6, 6))
     mu_minus_vec = np.zeros((length, 6))
     P_minus_vec  = np.zeros((length, 6, 6))
+    
     meas = np.load("Project-Measurements-Easy.npy")
     mu = 3.986e5
 
@@ -212,6 +213,34 @@ def plot_pure_prediction(results_EKF):
     axes[-1].set_xlabel("Time step k")
     axes[0].legend()
     plt.tight_layout()
-    plt.show()
+
+    return fig
+
+def plot_with_updates(results_EKF):
+    mu_plus = results_EKF['mu_plus']
+    P_plus = results_EKF['P_plus']
+
+    state_names = ["x", "y", "z", "vx", "vy", "vz"]
+    k_vec = np.arange(mu_plus.shape[0])
+    
+    fig, axes = plt.subplots(6, 1, figsize=(10, 16), sharex=True)
+    plt.suptitle("Measurement Corrected Estimates (-)")
+
+    for i in range(6):
+        mu_i = mu_plus[:, i]
+        sigma_i = np.sqrt(P_plus[:, i, i])
+
+        axes[i].plot(k_vec, mu_i, label=f'{state_names[i]} estimate [km]')
+        axes[i].fill_between(k_vec,
+                            mu_i - 3*sigma_i,
+                            mu_i + 3*sigma_i,
+                            alpha=0.2,
+                            label='+/-3 sigma bounds')
+        axes[i].set_ylabel(state_names[i])
+        axes[i].grid(True)
+        axes[i].legend(loc='upper right')
+
+    axes[-1].set_xlabel('Time Step')
+    plt.tight_layout()
 
     return fig
