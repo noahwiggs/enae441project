@@ -62,7 +62,6 @@ def A_2bp(x, mu):
     ])
     return A
 
-
 def h_rho_rhodot(x, t, site_id):
     r = x[0:3]
     v = x[3:6]
@@ -102,6 +101,7 @@ def load_numpy_data(file_path):
 
 def run_EKF(length, y, mu0, P0, F, H, Q, R):
 
+    #Set up blank matricies
     mu_plus_vec = np.zeros((length + 1, 6))
     P_plus_vec = np.zeros((length + 1, 6, 6))
     mu_minus_vec = np.zeros((length, 6))
@@ -109,6 +109,7 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
     meas = np.load("Project-Measurements-Easy.npy")
     mu = 3.986e5
 
+    # Set initialize mu, P
     mu_plus_vec[0] = mu0
     P_plus_vec[0]  = P0
 

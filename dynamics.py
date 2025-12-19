@@ -9,6 +9,7 @@ def rk4(rhs, x0, dt):
     k4 = rhs(0, x0 + dt * k3)
 
     return x0 + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+
 def two_body_rhs(_, x):
     r = x[:3]
     v = x[3:]
