@@ -155,17 +155,8 @@ mu0 = np.array([
     2.15123949e+00,  7.55370288e+00,  2.15134590e+00
 ], dtype=float)
 
-P0 = np.block([
-    [50.0*np.eye(3), np.zeros((3,3))],
-    [np.zeros((3,3)), 0.1*np.eye(3)]
-])
-P0 = P0_blls.copy()
-P0 = 0.5*(P0 + P0.T)   # enforce symmetry
-
-alpha = 1.0            # try 5.0 or 10.0 if needed
-P0 *= alpha**2
 #run EKF
-results = run_EKF(length, mu0, P0, a, R)
+results = run_EKF(length, mu0, P0_blls, a, R)
 
 #plot EKF results
 from EKF import plot_pure_prediction
