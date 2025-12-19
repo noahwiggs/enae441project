@@ -97,36 +97,36 @@ def load_numpy_data(file_path):
     print(f"Loaded data from {file_path}")
     return data
 ##############################################################################
-def run_KF_prediction_only(length, mu0, P0, F, Q):
-    mu_minus = np.zeros((length, 6))
-    P_minus  = np.zeros((length, 6, 6))
-    sigma_minus = np.zeros((length, 6))
+# def run_KF_prediction_only(length, mu0, P0, F, Q):
+#     mu_minus = np.zeros((length, 6))
+#     P_minus  = np.zeros((length, 6, 6))
+#     sigma_minus = np.zeros((length, 6))
 
-    mu_prev = mu0
-    P_prev  = P0
+#     mu_prev = mu0
+#     P_prev  = P0
 
-    t_start = time.time()
+#     t_start = time.time()
 
-    for k in range(length):
-        mu_pred = F @ mu_prev
-        P_pred  = F @ P_prev @ F.T + Q
+#     for k in range(length):
+#         mu_pred = F @ mu_prev
+#         P_pred  = F @ P_prev @ F.T + Q
 
-        mu_minus[k] = mu_pred
-        P_minus[k]  = P_pred
-        sigma_minus[k] = np.sqrt(np.diag(P_pred))  
+#         mu_minus[k] = mu_pred
+#         P_minus[k]  = P_pred
+#         sigma_minus[k] = np.sqrt(np.diag(P_pred))  
 
-        mu_prev = mu_pred
-        P_prev  = P_pred
+#         mu_prev = mu_pred
+#         P_prev  = P_pred
 
-    t_end = time.time()
+#     t_end = time.time()
 
-    return {
-        'mu_minus': mu_minus,             
-        'P_minus': P_minus,                
-        'sigma_minus': sigma_minus,        
-        'sigma3_minus': 3 * sigma_minus,   
-        't_execution': t_end - t_start
-    }
+#     return {
+#         'mu_minus': mu_minus,             
+#         'P_minus': P_minus,                
+#         'sigma_minus': sigma_minus,        
+#         'sigma3_minus': 3 * sigma_minus,   
+#         't_execution': t_end - t_start
+#     }
 ##############################################################################
 
 def run_EKF(length, mu0, P0, a, Rk):
@@ -151,6 +151,9 @@ def run_EKF(length, mu0, P0, a, Rk):
     for k in range(1,length):
         mu_prev = mu_plus_vec[k-1]
         P_prev  = P_plus_vec[k-1]
+
+        if k < 5:
+            print(k, np.linalg.norm(mu_prev[0:3]))
 
         # measurement time for this step
         t_k = float(meas[k, 0])
@@ -185,8 +188,8 @@ def run_EKF(length, mu0, P0, a, Rk):
                        ])
         P_minus = Fk @ P_prev @ Fk.T + Qk
 
-        mu_minus_vec[k] = mu_minus
-        P_minus_vec[k]  = P_minus
+        mu_minus_vec[k-1] = mu_minus
+        P_minus_vec[k-1]  = P_minus
 
         # Correct: nonlinear measurement 
         y_hat = h_rho_rhodot(mu_minus, t_k, i_k)
@@ -210,8 +213,8 @@ def run_EKF(length, mu0, P0, a, Rk):
         'P_minus':  P_minus_vec,
         'mu_plus':  mu_plus_vec,
         'P_plus':   P_plus_vec,
-        'x_final':  mu_plus_vec[-1],
-        'P_final':  P_plus_vec[-1],
+        'x_final':  mu_plus_vec[length-1],
+        'P_final':  P_plus_vec[length-1],
         't_execution': t_end - t_start
     }
     return results_dict

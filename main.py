@@ -1,25 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from orbits import orbital_elements_to_state
-from stations import stations_eci_func
-from dynamics import propagate_func
-from blls_fcns import meas_func, H_func
-from blls_init import blls_x0
-
-##################################################################
-## ============+==== Givens/problem statement ================= ##
-##################################################################
-
-X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
-#a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
-X_oe_rad = X_oe.copy()
-X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
-x_hat = orbital_elements_to_state(X_oe_rad)
-print("OE conversion x_hat:", x_hat)
-
-##################################################################
-## =================== Extract/present data =================== ##
-##################################################################
 
 def load_numpy_data(file_path):
     import os
@@ -28,6 +8,14 @@ def load_numpy_data(file_path):
     print(f"Loaded data from {file_path}")
     return data
 
+def oe_conversion(X_oe):
+    from orbits import orbital_elements_to_state
+    X_oe_rad = X_oe.copy()
+    X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
+    x_hat = orbital_elements_to_state(X_oe_rad)
+    print("OE conversion x_hat:", x_hat)
+    return x_hat
+
 def write_to_csv(arr, filename):
     if arr.ndim != 2:
         arr = arr.reshape(-1, arr.shape[-1])
@@ -35,140 +23,139 @@ def write_to_csv(arr, filename):
     header = "time,siteID,range,range_rate"
     np.savetxt(filename, arr, delimiter=",", fmt="%.10f", header=header, comments="")
 
-raw_data = load_numpy_data('Project-Measurements-Easy.npy')
+def extract_present_data(raw_data):
+    N = raw_data.shape[0]
+    DSN0_data = []
+    DSN1_data = []
+    DSN2_data = []
 
-N = raw_data.shape[0]
+    for i in range(N):
+        GS_id = raw_data[i, 1]
+        if GS_id == 0:
+            DSN0_data.append(raw_data[i]) 
+        elif GS_id == 1:
+            DSN1_data.append(raw_data[i])
+        elif GS_id == 2:
+            DSN2_data.append(raw_data[i])
+        else:
+            print('Error sorting measurement index ' + str(i))
 
-DSN0_data = []
-DSN1_data = []
-DSN2_data = []
+    DSN0_data = np.array(DSN0_data)
+    DSN1_data = np.array(DSN1_data)
+    DSN2_data = np.array(DSN2_data)
 
-for i in range(N):
-    GS_id = raw_data[i, 1]
-    if GS_id == 0:
-        DSN0_data.append(raw_data[i]) 
-    elif GS_id == 1:
-        DSN1_data.append(raw_data[i])
-    elif GS_id == 2:
-        DSN2_data.append(raw_data[i])
-    else:
-        print('Error sorting measurement index ' + str(i))
+    write_to_csv(raw_data,"raw_data.csv")
+    write_to_csv(DSN0_data,"DSN0_data.csv")
+    write_to_csv(DSN1_data,"DSN1_data.csv")
+    write_to_csv(DSN2_data,"DSN2_data.csv")
 
-DSN0_data = np.array(DSN0_data)
-DSN1_data = np.array(DSN1_data)
-DSN2_data = np.array(DSN2_data)
+    ###########################################################
+    ## =================== 1(e) Plotting =================== ##
+    ###########################################################
 
-write_to_csv(raw_data,"raw_data.csv")
-write_to_csv(DSN0_data,"DSN0_data.csv")
-write_to_csv(DSN1_data,"DSN1_data.csv")
-write_to_csv(DSN2_data,"DSN2_data.csv")
+    DSN_list = [DSN0_data, DSN1_data, DSN2_data]
+    colors = ["tab:green", "tab:orange", "tab:blue"]
+    labels = ["DSN0", "DSN1", "DSN2"]
 
-###########################################################
-## =================== 1(e) Plotting =================== ##
-###########################################################
+    marker_size = 5
 
-DSN_list = [DSN0_data, DSN1_data, DSN2_data]
-colors = ["tab:green", "tab:orange", "tab:blue"]
-labels = ["DSN0", "DSN1", "DSN2"]
+    #Fig 1 (range on top, range rate on bottom)
+    fig1, axs = plt.subplots(2, 3, figsize=(15, 8), sharex=True)
 
-marker_size = 5
+    for i, data in enumerate(DSN_list):
+        t = data[:,0]
+        rho = data[:,2]
+        rho_dot = data[:,3]
 
-#Fig 1 (range on top, range rate on bottom)
-fig1, axs = plt.subplots(2, 3, figsize=(15, 8), sharex=True)
+        axs[0, i].plot(t, rho, '.', color=colors[i], markersize=marker_size)
+        axs[0, i].set_title(f"{labels[i]} range")
+        axs[0, i].set_ylabel("range [km]")
+        axs[0, i].grid(True)
 
-for i, data in enumerate(DSN_list):
-    t = data[:,0]
-    rho = data[:,2]
-    rho_dot = data[:,3]
+        axs[1, i].plot(t, rho_dot, '.', color=colors[i], markersize=marker_size)
+        axs[1, i].set_title(f"{labels[i]} range rate")
+        axs[1, i].set_xlabel("time [s]")
+        axs[1, i].set_ylabel("range rate [km/s]")
+        axs[1, i].grid(True)
 
-    axs[0, i].plot(t, rho, '.', color=colors[i], markersize=marker_size)
-    axs[0, i].set_title(f"{labels[i]} range")
-    axs[0, i].set_ylabel("range [km]")
-    axs[0, i].grid(True)
+    # Figure 2 (combined plots)
+    fig2, axs2 = plt.subplots(1, 2, figsize=(14, 5), sharex=True)
 
-    axs[1, i].plot(t, rho_dot, '.', color=colors[i], markersize=marker_size)
-    axs[1, i].set_title(f"{labels[i]} range rate")
-    axs[1, i].set_xlabel("time [s]")
-    axs[1, i].set_ylabel("range rate [km/s]")
-    axs[1, i].grid(True)
+    for i, data in enumerate(DSN_list):
+        t = data[:,0]
+        axs2[0].plot(t, data[:,2], '.', color=colors[i], markersize=marker_size, label=labels[i])
+        axs2[1].plot(t, data[:,3], '.', color=colors[i], markersize=marker_size, label=labels[i])
 
-# Figure 2 (combined plots)
-fig2, axs2 = plt.subplots(1, 2, figsize=(14, 5), sharex=True)
+    axs2[0].set_title("Measured range vs time")
+    axs2[0].set_xlabel("time [s]")
+    axs2[0].set_ylabel("range [km]")
+    axs2[0].grid(True)
+    axs2[0].legend()
 
-for i, data in enumerate(DSN_list):
-    t = data[:,0]
-    axs2[0].plot(t, data[:,2], '.', color=colors[i], markersize=marker_size, label=labels[i])
-    axs2[1].plot(t, data[:,3], '.', color=colors[i], markersize=marker_size, label=labels[i])
+    axs2[1].set_title("Measured range rate vs time")
+    axs2[1].set_xlabel("time [s]")
+    axs2[1].set_ylabel("range rate [km/s]")
+    axs2[1].grid(True)
+    axs2[1].legend()
 
-axs2[0].set_title("Measured range vs time")
-axs2[0].set_xlabel("time [s]")
-axs2[0].set_ylabel("range [km]")
-axs2[0].grid(True)
-axs2[0].legend()
+    fig1.tight_layout()
+    fig2.tight_layout()
 
-axs2[1].set_title("Measured range rate vs time")
-axs2[1].set_xlabel("time [s]")
-axs2[1].set_ylabel("range rate [km/s]")
-axs2[1].grid(True)
-axs2[1].legend()
+def initial_blls_guess(x_hat, raw_data):
+    from stations import stations_eci_func
+    from dynamics import propagate_func
+    from blls_fcns import meas_func, H_func
+    from blls_init import blls_x0
 
-fig1.tight_layout()
-fig2.tight_layout()
+    sigma_r0 = 10.0 # km
+    sigma_v0 = 0.01 # km/s
+    P0_guess = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
 
-###########################################################
-## =========== 3(a) Initial Guess using BLLS =========== ##
-###########################################################
-sigma_r0 = 10.0 # km
-sigma_v0 = 0.01 # km/s
-P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
+    sigma_rho = 1e-3  # km
+    sigma_rhodot = 1e-5  # km/s
+    R_guess = np.diag([sigma_rho**2, sigma_rhodot**2])
 
-sigma_rho = 1e-3  # km
-sigma_rhodot = 1e-5  # km/s
-R_blls = np.diag([sigma_rho**2, sigma_rhodot**2])
+    t_window = 50.0 #seconds
+    x0_blls, P0_blls, dx0 = blls_x0(raw_data,x_hat,P0_guess,R_guess,stations_eci_func,propagate_func,meas_func,H_func, t_window)
+    
+    print("BLLS x0:", x0_blls)
+    print("BLLS P0: ", P0_blls)
+    return x0_blls, P0_blls
 
-x0_blls, P0_blls, dx0 = blls_x0(
-    raw_data=raw_data,
-    x0_nom=x_hat,
-    P0_nom=P0,
-    R_meas=R_blls,
-    stations_eci_func=stations_eci_func,
-    propagate_func=propagate_func,
-    meas_func=meas_func,
-    H_func=H_func,
-    t_window=50.0
-)
-print("BLLS x0:", x0_blls)
-print("BLLS P0: ", P0_blls)
+def main():
+    # Givens/load data
+    X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
+    #a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
+    
+    raw_data = load_numpy_data('Project-Measurements-Easy.npy')
+    length = raw_data.shape[0]
 
-###########################################################
-## ============ Extended Kalman Filter ================= ##
-###########################################################
-from EKF import run_EKF
-from EKF import run_KF_prediction_only
-meas = np.load("Project-Measurements-Easy.npy")
-length = meas.shape[0]
+    #preliminary functions
+    x_hat = oe_conversion(X_oe)
+    extract_present_data(raw_data)
 
-a = 1e-15 #mm/s^2
+    #Run BLLS to get better filter initialization
+    x0_blls, P0_blls = initial_blls_guess(x_hat, raw_data)
 
-R = np.array([[1e-3**2,0],
-             [0, 1e-5**2]])
+    #Filter initialization
+    a = 1e-15 #micrometers/s^2
 
-mu0 = np.array([
-    4.48528055e+03, -1.26238277e+03,  4.48527073e+03,
-    2.15123949e+00,  7.55370288e+00,  2.15134590e+00
-], dtype=float)
+    R = np.array([[1e-3**2,0],
+                [0, 1e-5**2]])
 
-#run EKF prediction only
-results_prediction = run_KF_prediction_only(length, mu0, P0_blls, F, Q)
-#run EKF
-results = run_EKF(length, mu0, P0_blls, a, R)
+    mu0 =x0_blls
 
-#plot EKF results
-from EKF import plot_pure_prediction
-plot_pure_prediction(results_prediction)
+    P0 = P0_blls
 
+    #Run filters and plot results from filters
+    from EKF import run_EKF_prediction_only, run_EKF, plot_pure_prediction, plot_with_updates
+    results_prediction = run_EKF_prediction_only(length, mu0, P0, a, R)
+    plot_pure_prediction(results_prediction)
 
-from EKF import plot_with_updates
-plot_with_updates(results)
+    results_EKF = run_EKF(length, mu0, P0, a, R)
+    plot_with_updates(results_EKF)
 
-plt.show()
+    plt.show()
+
+if __name__ == "__main__":
+    main()
