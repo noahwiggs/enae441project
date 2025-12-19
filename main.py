@@ -137,8 +137,8 @@ def main():
     #Filter initialization
     a = 1e-15 #micrometers/s^2
 
-    R = np.array([[1e-3**2,0],
-                  [0, 1e-5**2]])
+    R = np.array([[(51*1e-3)**2,0],
+                  [0, (1e-5)**2]])
 
     mu0 =x0_blls
 

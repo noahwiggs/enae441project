@@ -397,10 +397,10 @@ def plot_EKF_covariance_envelope(results):
         c = colors[i]
 
         if i == 0:
-            axes[i].plot(t,  3*sig_m, color=c, linestyle='--', label='Pre ±3σ')
+            axes[i].plot(t,  3*sig_m, color=c, linestyle='--', label='Pre ±3sigma')
             axes[i].plot(t, -3*sig_m, color=c, linestyle='--')
 
-            axes[i].plot(t,  3*sig_p, color=c, linestyle='-', label='Post ±3σ')
+            axes[i].plot(t,  3*sig_p, color=c, linestyle='-', label='Post ±3sigma')
             axes[i].plot(t, -3*sig_p, color=c, linestyle='-')
         else:
             axes[i].plot(t,  3*sig_m, color=c, linestyle='--')
@@ -417,7 +417,7 @@ def plot_EKF_covariance_envelope(results):
             axes[i].set_xlabel('Time [s]')
 
     axes[0].legend(fontsize=9)
-    fig1.suptitle('EKF State Covariance: Pre vs Post ±3σ')
+    fig1.suptitle('EKF State Covariance: Pre vs Post ±3sigma')
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     fig2, ax = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
@@ -488,7 +488,7 @@ def plot_EKF_state_update_difference(results):
         sigma_minus = np.sqrt(P_minus[:, i, i])
         c = colors[i]
 
-        axes[i].plot(t,  delta_mu[:, i], color=c, label='Post − Pre')
+        axes[i].plot(t,  delta_mu[:, i], color=c, label='Post - Pre')
         axes[i].plot(t,  3*sigma_minus, 'k--')
         axes[i].plot(t, -3*sigma_minus, 'k--')
 
@@ -501,7 +501,7 @@ def plot_EKF_state_update_difference(results):
 
     axes[0].legend(fontsize=9)
     fig.suptitle(
-        'EKF Measurement Update Δμ within Pre-Update ±3σ Bounds',
+        'EKF Measurement Update dmu within Pre-Update ±3 sigma Bounds',
         fontsize=14
     )
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
