@@ -152,6 +152,7 @@ Q = np.block([
 ])
 
 R = np.diag([1e-3**2, 1e-5**2])
+
 mu0 = np.array([
     4.48528055e+03, -1.26238277e+03,  4.48527073e+03,
     2.15123949e+00,  7.55370288e+00,  2.15134590e+00
@@ -161,6 +162,7 @@ P0 = np.block([
     [50.0*np.eye(3), np.zeros((3,3))],
     [np.zeros((3,3)), 0.1*np.eye(3)]
 ])
+
 results = run_EKF(
     length=length,
     y=None,
