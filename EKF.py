@@ -53,7 +53,7 @@ def A_2bp(x, mu):
     rnorm = np.linalg.norm(r)
     I3 = np.eye(3)
     rrT = np.outer(r, r)
-    dadr = -mu * (I3/(rnorm**3) - 3.0*rrT/(rnorm**5))  # ∂a/∂r
+    dadr = -mu * (I3/(rnorm**3) - 3.0*rrT/(rnorm**5))
 
     Z3 = np.zeros((3,3))
     A = np.block([
@@ -116,9 +116,9 @@ def run_EKF(length, mu0, P0, a, Rk):
     t_start = time.time()
     t_prev = float(meas[0,0])
 
-    for k in range(1, length):
-        mu_prev = mu_plus_vec[k]
-        P_prev  = P_plus_vec[k]
+    for k in range(1,length):
+        mu_prev = mu_plus_vec[k-1]
+        P_prev  = P_plus_vec[k-1]
 
         # measurement time for this step
         t_k = float(meas[k, 0])
@@ -167,8 +167,8 @@ def run_EKF(length, mu0, P0, a, Rk):
        
         P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + K @ Rk @ K.T
 
-        mu_plus_vec[k+1] = mu_plus
-        P_plus_vec[k+1]  = P_plus
+        mu_plus_vec[k] = mu_plus
+        P_plus_vec[k]  = P_plus
 
         
     t_end = time.time()
