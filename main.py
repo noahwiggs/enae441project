@@ -104,7 +104,7 @@ def initial_blls_guess(x_hat, raw_data):
     from blls_init import blls_x0
 
     sigma_r0 = 10.0 # km
-    sigma_v0 = 0.01 # km/s
+    sigma_v0 = 0.5 # km/s
     P0_guess = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
 
     sigma_rho = 1e-3  # km
@@ -151,10 +151,10 @@ def main():
     #plot_orbit_xy_samples(results_prediction)
     #plot_prediction_covariance_envelope(results_prediction)
 
-    from EKF import run_EKF, plot_EKF_covariance_envelope
+    from EKF import run_EKF, plot_EKF_covariance_envelope, plot_EKF_state_update_difference
     results_EKF = run_EKF(raw_data, length, mu0, P0, mu, a, R)
     plot_EKF_covariance_envelope(results_EKF)
-    #plot_state_update_difference(results_EKF)
+    plot_EKF_state_update_difference(results_EKF)
 
     plt.show()
 

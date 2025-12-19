@@ -465,3 +465,45 @@ def plot_EKF_covariance_envelope(results):
 
     return fig1, fig2
 
+def plot_EKF_state_update_difference(results):
+    t = results['t']
+
+    mu_minus = results['mu_minus']
+    mu_plus  = results['mu_plus']
+    P_minus  = results['P_minus']
+
+    delta_mu = mu_plus - mu_minus
+
+    state_labels = [
+        'x (km)', 'y (km)', 'z (km)',
+        'vx (km/s)', 'vy (km/s)', 'vz (km/s)'
+    ]
+
+    colors = ['C2', 'C0', 'C3', 'C2', 'C0', 'C3']
+
+    fig, axes = plt.subplots(3, 2, figsize=(10, 7), sharex=True)
+    axes = axes.flatten()
+
+    for i in range(6):
+        sigma_minus = np.sqrt(P_minus[:, i, i])
+        c = colors[i]
+
+        axes[i].plot(t,  delta_mu[:, i], color=c, label='Post − Pre')
+        axes[i].plot(t,  3*sigma_minus, 'k--')
+        axes[i].plot(t, -3*sigma_minus, 'k--')
+
+        axes[i].axhline(0, color='k', linewidth=0.5)
+        axes[i].set_ylabel(state_labels[i])
+        axes[i].grid(True)
+
+        if i >= 4:
+            axes[i].set_xlabel('Time [s]')
+
+    axes[0].legend(fontsize=9)
+    fig.suptitle(
+        'EKF Measurement Update Δμ within Pre-Update ±3σ Bounds',
+        fontsize=14
+    )
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    return fig
