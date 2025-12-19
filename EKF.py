@@ -84,9 +84,10 @@ def H_rho_rhodot(x, t, site_id):
     dv = v - Vsite
     rho = np.linalg.norm(dr)
     rhodot = (dr @ dv) / rho
-
+    d_rhodot_dr = (dv / rho - (rhodot / rho) * (dr / rho)).reshape(1, 3)
+    d_rhodot_dv = (dr / rho).reshape(1, 3)
     H = np.block([[dr/rho, np.zeros((1,3))],
-                  [(dv-rhodot*(dr/rho))/rho, dr/rho]])
+                  [d_rhodot_dr, d_rhodot_dv]])
     return H
 
 def load_numpy_data(file_path):
@@ -149,6 +150,7 @@ def run_EKF(length, mu0, P0, a, Rk):
         Qk = np.block([[Q11, np.zeros((3,3))],
                        [np.zeros((3,3)), Q22]
                        ])
+
         P_minus = Fk @ P_prev @ Fk.T + Qk
 
         mu_minus_vec[k] = mu_minus
@@ -167,6 +169,7 @@ def run_EKF(length, mu0, P0, a, Rk):
 
         mu_plus_vec[k+1] = mu_plus
         P_plus_vec[k+1]  = P_plus
+
         
     t_end = time.time()
 
