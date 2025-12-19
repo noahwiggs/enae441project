@@ -167,4 +167,4 @@ plot_pure_prediction(results)
 from EKF import plot_with_updates
 plot_with_updates(results)
 
-
+plt.show()
