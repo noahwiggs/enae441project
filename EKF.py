@@ -86,7 +86,7 @@ def H_rho_rhodot(x, t, site_id):
     rhodot = (dr @ dv) / rho
 
     H = np.block([[dr/rho, np.zeros((1,3))],
-                  [dv/rho, dr/rho]])
+                  [(dv-rhodot*(dr/rho))/rho, dr/rho]])
     return H
 
 def load_numpy_data(file_path):
