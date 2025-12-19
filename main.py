@@ -138,6 +138,7 @@ x0_blls, P0_blls, dx0 = blls_x0(
     t_window=50.0
 )
 print("BLLS x0:", x0_blls)
+print("BLLS P0: ", P0_blls)
 
 ###########################################################
 ## ================== Pure Prediction ================== ##
@@ -159,7 +160,11 @@ P0 = np.block([
     [50.0*np.eye(3), np.zeros((3,3))],
     [np.zeros((3,3)), 0.1*np.eye(3)]
 ])
+P0 = P0_blls.copy()
+P0 = 0.5*(P0 + P0.T)   # enforce symmetry
 
+alpha = 1.0            # try 5.0 or 10.0 if needed
+P0 *= alpha**2
 results = run_EKF(
     length=length,
     mu0=mu0,
@@ -169,6 +174,7 @@ results = run_EKF(
 )
 from EKF import plot_pure_prediction
 plot_pure_prediction(results)
+
 
 
 

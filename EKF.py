@@ -150,7 +150,7 @@ def run_EKF(length, mu0, P0, a, R):
         Q22 = sigma_d**2 * np.eye(3)
         Qk = np.block([[Q11, np.zeros((3,3))],
                        [np.zeros((3,3)), Q22]
-])
+                       ])
         P_minus = Fk @ P_prev @ Fk.T + Qk
 
         mu_minus_vec[k] = mu_minus
