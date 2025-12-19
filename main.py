@@ -146,10 +146,7 @@ from EKF import run_EKF
 meas = np.load("Project-Measurements-Easy.npy")
 length = meas.shape[0]
 
-Q = np.block([
-    [1e-5*np.eye(3), np.zeros((3,3))],
-    [np.zeros((3,3)), 1e-7*np.eye(3)]
-])
+a = 1e-9 #mm/s^2
 
 R = np.diag([1e-3**2, 1e-5**2])
 
@@ -165,12 +162,9 @@ P0 = np.block([
 
 results = run_EKF(
     length=length,
-    y=None,
     mu0=mu0,
     P0=P0,
-    F=None,
-    H=None,
-    Q=Q,
+    a=a,
     R=R
 )
 from EKF import plot_pure_prediction

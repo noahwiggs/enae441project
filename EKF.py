@@ -99,7 +99,7 @@ def load_numpy_data(file_path):
     print(f"Loaded data from {file_path}")
     return data
 
-def run_EKF(length, y, mu0, P0, F, H, Q, R):
+def run_EKF(length, mu0, P0, a, R):
 
     #Set up blank matricies
     mu_plus_vec = np.zeros((length + 1, 6))
@@ -140,7 +140,17 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
         mu_minus = X_t_vec[-1]
         Fk = phi_t_vec[-1] # STM from t_prev -> t_k
 
-        Qk = Q(k) if callable(Q) else Q
+        dt = t_k - t_prev
+
+        sigma_dd = a
+        sigma_d = sigma_dd*dt
+        sigma = sigma_dd*(dt**3)/2
+
+        Q11 = sigma**2 * np.eye(3)
+        Q22 = sigma_d**2 * np.eye(3)
+        Qk = np.block([[Q11, np.zeros((3,3))],
+                       [np.zeros((3,3)), Q22]
+])
         P_minus = Fk @ P_prev @ Fk.T + Qk
 
         mu_minus_vec[k] = mu_minus
