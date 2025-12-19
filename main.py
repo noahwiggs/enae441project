@@ -124,7 +124,7 @@ P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
 
 sigma_rho = 1e-3  # km
 sigma_rhodot = 1e-5  # km/s
-R = np.diag([sigma_rho**2, sigma_rhodot**2])
+R_blls = np.diag([sigma_rho**2, sigma_rhodot**2])
 
 x0_blls, P0_blls, dx0 = blls_x0(
     raw_data=raw_data,
