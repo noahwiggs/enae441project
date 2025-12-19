@@ -124,12 +124,7 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
         t_k = float(meas[k, 0])
         i_k = int(meas[k, 1])
         y_k = meas[k, 2:4]  # [rho, rhodot]
-
-        # ---------------- Predict: propagate state + STM ----------------
-        # Use a small t_vec over [t_k, t_{k+1}] if you have times;
-        # If meas has irregular times, use t_{k} -> t_{k+1}.
-        # Here we assume meas[k] corresponds to time t_k and we propagate from t_{k-1} to t_k.
-        # So define t_prev:
+        
         if k == 0:
             t_prev = t_k
         else:
