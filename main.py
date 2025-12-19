@@ -16,14 +16,6 @@ X_oe_rad[2:] = np.deg2rad(X_oe_rad[2:])
 x_hat = orbital_elements_to_state(X_oe_rad)
 print("OE conversion x_hat:", x_hat)
 
-sigma_r0 = 10.0 # km
-sigma_v0 = 0.01 # km/s
-P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
-
-sigma_rho = 1e-3  # km
-sigma_rhodot = 1e-5  # km/s
-R = np.diag([sigma_rho**2, sigma_rhodot**2])
-
 ##################################################################
 ## =================== Extract/present data =================== ##
 ##################################################################
@@ -125,6 +117,14 @@ fig2.tight_layout()
 ###########################################################
 ## =========== 3(a) Initial Guess using BLLS =========== ##
 ###########################################################
+sigma_r0 = 10.0 # km
+sigma_v0 = 0.01 # km/s
+P0 = np.diag([sigma_r0**2]*3 + [sigma_v0**2]*3)
+
+sigma_rho = 1e-3  # km
+sigma_rhodot = 1e-5  # km/s
+R = np.diag([sigma_rho**2, sigma_rhodot**2])
+
 x0_blls, P0_blls, dx0 = blls_x0(
     raw_data=raw_data,
     x0_nom=x_hat,
