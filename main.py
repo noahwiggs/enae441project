@@ -144,6 +144,7 @@ print("BLLS P0: ", P0_blls)
 ## ============ Extended Kalman Filter ================= ##
 ###########################################################
 from EKF import run_EKF
+from EKF import run_KF_prediction_only
 meas = np.load("Project-Measurements-Easy.npy")
 length = meas.shape[0]
 
@@ -157,12 +158,14 @@ mu0 = np.array([
     2.15123949e+00,  7.55370288e+00,  2.15134590e+00
 ], dtype=float)
 
+#run EKF prediction only
+results_prediction = run_KF_prediction_only(length, mu0, P0_blls, F, Q)
 #run EKF
 results = run_EKF(length, mu0, P0_blls, a, R)
 
 #plot EKF results
 from EKF import plot_pure_prediction
-plot_pure_prediction(results)
+plot_pure_prediction(results_prediction)
 
 
 from EKF import plot_with_updates

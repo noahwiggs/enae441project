@@ -96,6 +96,38 @@ def load_numpy_data(file_path):
     data = np.load(cur_dir + file_path, allow_pickle=True)
     print(f"Loaded data from {file_path}")
     return data
+##############################################################################
+def run_KF_prediction_only(length, mu0, P0, F, Q):
+    mu_minus = np.zeros((length, 6))
+    P_minus  = np.zeros((length, 6, 6))
+    sigma_minus = np.zeros((length, 6))
+
+    mu_prev = mu0
+    P_prev  = P0
+
+    t_start = time.time()
+
+    for k in range(length):
+        mu_pred = F @ mu_prev
+        P_pred  = F @ P_prev @ F.T + Q
+
+        mu_minus[k] = mu_pred
+        P_minus[k]  = P_pred
+        sigma_minus[k] = np.sqrt(np.diag(P_pred))  
+
+        mu_prev = mu_pred
+        P_prev  = P_pred
+
+    t_end = time.time()
+
+    return {
+        'mu_minus': mu_minus,             
+        'P_minus': P_minus,                
+        'sigma_minus': sigma_minus,        
+        'sigma3_minus': 3 * sigma_minus,   
+        't_execution': t_end - t_start
+    }
+##############################################################################
 
 def run_EKF(length, mu0, P0, a, Rk):
 
