@@ -56,7 +56,7 @@ def extract_present_data(raw_data):
     marker_size = 5
 
     #Fig 1 (range on top, range rate on bottom)
-    fig1, axs = plt.subplots(2, 3, figsize=(15, 8), sharex=True)
+    fig1, axs = plt.subplots(2, 3, figsize=(10, 7), sharex=True)
 
     for i, data in enumerate(DSN_list):
         t = data[:,0]
@@ -75,7 +75,7 @@ def extract_present_data(raw_data):
         axs[1, i].grid(True)
 
     # Figure 2 (combined plots)
-    fig2, axs2 = plt.subplots(1, 2, figsize=(14, 5), sharex=True)
+    fig2, axs2 = plt.subplots(1, 2, figsize=(10, 7), sharex=True)
 
     for i, data in enumerate(DSN_list):
         t = data[:,0]
@@ -121,6 +121,7 @@ def initial_blls_guess(x_hat, raw_data):
 def main():
     # Givens/load data
     X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
+    mu = 3.986e5
     #a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
 
     raw_data = load_numpy_data('Project-Measurements-Easy.npy')
@@ -144,13 +145,15 @@ def main():
     P0 = P0_blls
 
     #Run filters and plot results from filters
-    # from EKF import run_EKF_prediction_only, plot_pure_prediction
-    # results_prediction = run_EKF_prediction_only(length, mu0, P0, a, R)
-    # plot_pure_prediction(results_prediction)
+    from EKF import run_EKF_prediction_only, plot_pure_prediction, plot_orbit_xy_samples, plot_prediction_covariance_envelope
+    results_prediction = run_EKF_prediction_only(raw_data, length, mu0, P0, mu, a)
+    plot_pure_prediction(results_prediction)
+    plot_orbit_xy_samples(results_prediction)
+    plot_prediction_covariance_envelope(results_prediction)
 
-    from EKF import run_EKF, plot_with_updates
-    results_EKF = run_EKF(length, mu0, P0, a, R)
-    plot_with_updates(results_EKF)
+    # from EKF import run_EKF, plot_with_updates
+    # results_EKF = run_EKF(raw_data, length, mu0, P0, mu, a, R)
+    # plot_with_updates(results_EKF)
 
     plt.show()
 
