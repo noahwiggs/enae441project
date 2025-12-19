@@ -146,7 +146,7 @@ from EKF import run_EKF
 meas = np.load("Project-Measurements-Easy.npy")
 length = meas.shape[0]
 
-a = 1e-9 #mm/s^2
+a = 1e-15 #mm/s^2
 
 R = np.array([[1e-3**2,0],
              [0, 1e-5**2]])
@@ -168,4 +168,18 @@ from EKF import plot_with_updates
 plot_with_updates(results)
 
 plt.show()
+
+meas = np.load("Project-Measurements-Easy.npy")
+t = meas[:,0].astype(float)
+
+print("t min/max:", t.min(), t.max())
+print("any dt <= 0 ?", np.any(np.diff(t) <= 0))
+print("number of dt <= 0:", np.sum(np.diff(t) <= 0))
+
+bad = np.where(np.diff(t) <= 0)[0]
+print("first few bad indices:", bad[:10])
+if bad.size > 0:
+    i = bad[0]
+    print("t[i], t[i+1]:", t[i], t[i+1], "dt:", t[i+1]-t[i])
+    print("rows:\n", meas[i], "\n", meas[i+1])
 

@@ -114,6 +114,7 @@ def run_EKF(length, mu0, P0, a, Rk):
 
     I6 = np.eye(6)
     t_start = time.time()
+    t_prev = float(meas[0,0])
 
     for k in range(length):
         mu_prev = mu_plus_vec[k]
@@ -150,7 +151,6 @@ def run_EKF(length, mu0, P0, a, Rk):
         Qk = np.block([[Q11, np.zeros((3,3))],
                        [np.zeros((3,3)), Q22]
                        ])
-
         P_minus = Fk @ P_prev @ Fk.T + Qk
 
         mu_minus_vec[k] = mu_minus
