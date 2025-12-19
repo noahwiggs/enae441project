@@ -174,7 +174,7 @@ results = run_EKF(
     R=R
 )
 from purePrediction import plot_pure_prediction
-plot_pure_prediction("Project-Measurements-Easy.npy")
+plot_pure_prediction(results)
 
 
 

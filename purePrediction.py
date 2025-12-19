@@ -181,48 +181,10 @@ def run_EKF(length, y, mu0, P0, F, H, Q, R):
     }
     return results_dict
 
-def plot_pure_prediction(file_name):
+def plot_pure_prediction(results_EKF):
     
-    raw=load_numpy_data(file_name)
-    data = raw.item()
-    y = data['Y']                  
-    t = data['t']
-    dt = t[-1]/(len(t)-1) #should be 1 second
-    length = y.shape[0]
-    
-    #Givens
-    x0_hat = [0, 0, 500, 0, 0, 0] #km
-    
-    P0 = np.block([[50 * np.eye(3),     np.zeros((3,3))],
-                   [np.zeros((3,3)),    0.1 * np.eye(3)]])
-
-
-    W = 1e-5*np.eye(3) 
-    V = 1e3*np.eye(3)
-
-    #DT state space setup
-    
-    F = np.array([
-        [1, 0, 0, dt, 0,  0],
-        [0, 1, 0, 0,  dt, 0],
-        [0, 0, 1, 0,  0,  dt],
-        [0, 0, 0, 1,  0,  0],
-        [0, 0, 0, 0,  1,  0],
-        [0, 0, 0, 0,  0,  1]])
-    
-    H = np.array([
-        [1, 0, 0, 0, 0,  0],
-        [0, 1, 0, 0,  0, 0],
-        [0, 0, 1, 0,  0,  0]])
-    
-    Q = np.block([[W*(dt**3)/3, W*(dt**2)/2],
-                  [W*(dt**2)/2, W*dt]]) #6x6
-    R = V #3x3
-
-    results_KF = run_EKF(length, y, x0_hat, P0, F, H, Q, R)
-
-    mu_minus = results_KF['mu_minus']
-    P_minus = results_KF['P_minus']
+    mu_minus = results_EKF['mu_minus']
+    P_minus = results_EKF['P_minus']
 
     K = mu_minus.shape[0]    # number of prediction steps
     t = np.arange(K)
