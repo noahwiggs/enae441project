@@ -106,6 +106,7 @@ def run_EKF(length, mu0, P0, a, R):
     P_plus_vec = np.zeros((length + 1, 6, 6))
     mu_minus_vec = np.zeros((length, 6))
     P_minus_vec  = np.zeros((length, 6, 6))
+    
     meas = np.load("Project-Measurements-Easy.npy")
     mu = 3.986e5
 
