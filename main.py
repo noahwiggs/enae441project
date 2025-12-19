@@ -3,11 +3,12 @@ import matplotlib.pyplot as plt
 from orbits import orbital_elements_to_state
 from stations import stations_eci_func
 from dynamics import propagate_func
-from measurements import meas_func, H_func
+from blls_fcns import meas_func, H_func
 from blls_init import blls_x0
 
-
-## Givens/problem statement
+##################################################################
+## ============+==== Givens/problem statement ================= ##
+##################################################################
 
 X_oe = np.array([7000, 0.2, 45, 0, 270, 78.75], dtype = float)
 #a(km), e(dimless), i(deg), omega(deg), Omega(deg), theta(deg)
