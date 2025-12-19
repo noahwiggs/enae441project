@@ -90,7 +90,6 @@ def H_rho_rhodot(x, t, site_id):
                   [d_rhodot_dr, d_rhodot_dv]])
     return H
 
-##############################################################################
 def run_EKF_prediction_only(meas, length, mu0, P0, mu, a):
     mu_minus = np.zeros((length, 6))
     P_minus  = np.zeros((length, 6, 6))
@@ -210,7 +209,6 @@ def plot_orbit_xy_samples(results, x_dot_fcn=None, A_fcn=None, dense=False):
 
     return plt.gcf()
 
-
 def plot_prediction_covariance_envelope(results):
 
     P = results['P_minus']
@@ -284,119 +282,186 @@ def plot_prediction_covariance_envelope(results):
 
     return fig1, fig2
 
+def run_EKF(meas, length, mu0, P0, mu, a, Rk):
+    mu_minus = np.zeros((length, 6))
+    P_minus  = np.zeros((length, 6, 6))
+    sigma_minus = np.zeros((length, 6))
 
-# def run_EKF(raw_data, length, mu0, P0, a, Rk):
+    mu_plus  = np.zeros((length, 6))
+    P_plus   = np.zeros((length, 6, 6))
+    sigma_plus = np.zeros((length, 6))
 
-#     #Set up blank matricies
-#     mu_plus_vec = np.zeros((length + 1, 6))
-#     P_plus_vec = np.zeros((length + 1, 6, 6))
-#     mu_minus_vec = np.zeros((length, 6))
-#     P_minus_vec  = np.zeros((length, 6, 6))
+    residual_prefit  = np.zeros((length, 2))
+    residual_postfit = np.zeros((length, 2))
 
-#     # Set initialize mu, P
-#     mu_plus_vec[0] = mu0
-#     P_plus_vec[0]  = P0
+    mu_plus[0] = mu0
+    P_plus[0]  = P0
+    sigma_plus[0] = np.sqrt(np.diag(P0))
 
-#     I6 = np.eye(6)
-#     t_start = time.time()
-#     t_prev = float(raw_data[0,0])
+    I6 = np.eye(6)
 
-#     for k in range(1,length):
-#         mu_prev = mu_plus_vec[k-1]
-#         P_prev  = P_plus_vec[k-1]
+    t_start = time.time()
 
-#         if k < 5:
-#             print(k, np.linalg.norm(mu_prev[0:3]))
+    for k in range(1, length):
+        t_prev = float(meas[k-1, 0])
+        t_k    = float(meas[k, 0])
+        i_k    = int(meas[k, 1])
+        y_k    = meas[k, 2:4]
 
-#         # measurement time for this step
-#         t_k = float(raw_data[k, 0])
-#         i_k = int(raw_data[k, 1])
-#         y_k = raw_data[k, 2:4]  # [rho, rhodot]
-        
-#         if k == 0:
-#             t_prev = t_k
-#         else:
-#             t_prev = float(raw_data[k-1, 0])
+        dt = t_k - t_prev
 
-#         t_vec = [t_prev, t_k]
+        x_dot_fcn = lambda t, x: xdot_2bp(t, x, mu)
+        A_fcn     = lambda x: A_2bp(x, mu)
 
-#         x_dot_fcn = lambda t, x: xdot_2bp(t, x, mu)
-#         A_fcn     = lambda x: A_2bp(x, mu)
+        t_vec = [t_prev, t_k]
+        X_t_vec, phi_t_vec = propagate_LTV_system_numerically(
+            mu_plus[k-1], x_dot_fcn, A_fcn, t_vec
+        )
 
-#         X_t_vec, phi_t_vec = propagate_LTV_system_numerically(mu_prev, x_dot_fcn, A_fcn, t_vec)
+        mu_pred = X_t_vec[-1]
+        Fk = phi_t_vec[-1]
 
-#         mu_minus = X_t_vec[-1]
-#         Fk = phi_t_vec[-1] # STM from t_prev -> t_k
+        Qk = a**2 * np.block([
+            [(dt**3)/3 * np.eye(3), np.zeros((3,3))],
+            [np.zeros((3,3)),       dt * np.eye(3)]
+        ])
 
-#         dt = t_k - t_prev
+        P_pred = Fk @ P_plus[k-1] @ Fk.T + Qk
 
-#         sigma_dd = a
-#         sigma_d = sigma_dd*dt
-#         sigma = sigma_dd*(dt**3)/2
+        mu_minus[k] = mu_pred
+        P_minus[k]  = P_pred
+        sigma_minus[k] = np.sqrt(np.diag(P_pred))
 
-#         Q11 = sigma**2 * np.eye(3)
-#         Q22 = sigma_d**2 * np.eye(3)
-#         Qk = np.block([[Q11, np.zeros((3,3))],
-#                        [np.zeros((3,3)), Q22]
-#                        ])
-#         P_minus = Fk @ P_prev @ Fk.T + Qk
+        y_hat = h_rho_rhodot(mu_pred, t_k, i_k)
+        Hk = H_rho_rhodot(mu_pred, t_k, i_k)
 
-#         mu_minus_vec[k-1] = mu_minus
-#         P_minus_vec[k-1]  = P_minus
+        residual_prefit[k] = y_k - y_hat
 
-#         # Correct: nonlinear measurement 
-#         y_hat = h_rho_rhodot(mu_minus, t_k, i_k)
-#         Hk = H_rho_rhodot(mu_minus, t_k, i_k)
+        K = P_pred @ Hk.T @ np.linalg.inv(Hk @ P_pred @ Hk.T + Rk)
 
-#         K = P_minus @ Hk.T @ np.linalg.inv(Hk @ P_minus @ Hk.T + Rk)
+        mu_upd = mu_pred + K @ (y_k - y_hat)
+        P_upd = (I6 - K @ Hk) @ P_pred @ (I6 - K @ Hk).T + K @ Rk @ K.T
 
-#         mu_plus = mu_minus + K @ (y_k - y_hat)
+        mu_plus[k] = mu_upd
+        P_plus[k]  = P_upd
+        sigma_plus[k] = np.sqrt(np.diag(P_upd))
 
-       
-#         P_plus = (I6 - K @ Hk) @ P_minus @ (I6 - K @ Hk).T + K @ Rk @ K.T
+        y_post = h_rho_rhodot(mu_upd, t_k, i_k)
+        residual_postfit[k] = y_k - y_post
 
-#         mu_plus_vec[k] = mu_plus
-#         P_plus_vec[k]  = P_plus
+    t_end = time.time()
 
-        
-#     t_end = time.time()
+    return {
+        't': meas[0:length, 0],
 
-#     results_dict = {
-#         'mu_minus': mu_minus_vec,
-#         'P_minus':  P_minus_vec,
-#         'mu_plus':  mu_plus_vec,
-#         'P_plus':   P_plus_vec,
-#         'x_final':  mu_plus_vec[length-1],
-#         'P_final':  P_plus_vec[length-1],
-#         't_execution': t_end - t_start
-#     }
-#     return results_dict
+        'mu_minus': mu_minus,
+        'P_minus': P_minus,
+        'sigma_minus': sigma_minus,
+        'sigma3_minus': 3 * sigma_minus,
 
-# def plot_with_updates(results_EKF):
-#     mu_plus = results_EKF['mu_plus']
-#     P_plus = results_EKF['P_plus']
+        'mu_plus': mu_plus,
+        'P_plus': P_plus,
+        'sigma_plus': sigma_plus,
+        'sigma3_plus': 3 * sigma_plus,
 
-#     state_names = ["x", "y", "z", "vx", "vy", "vz"]
-#     k_vec = np.arange(mu_plus.shape[0])
-    
-#     fig, axes = plt.subplots(6, 1, figsize=(10, 16), sharex=True)
-#     plt.suptitle("Measurement Corrected Estimates (-)")
+        'residual_prefit': residual_prefit,
+        'residual_postfit': residual_postfit,
 
-#     for i in range(6):
-#         mu_i = mu_plus[:, i]
-#         sigma_i = np.sqrt(P_plus[:, i, i])
+        'x_final': mu_plus[length-1],
+        'P_final': P_plus[length-1],
+        't_execution': t_end - t_start
+    }
 
-#         axes[i].plot(k_vec, mu_i, label=f'{state_names[i]} estimate [km]')
-#         axes[i].fill_between(k_vec,
-#                             mu_i - 3*sigma_i,
-#                             mu_i + 3*sigma_i,
-#                             alpha=0.2,
-#                             label='+/-3 sigma bounds')
-#         axes[i].set_ylabel(state_names[i])
-#         axes[i].grid(True)
-#         axes[i].legend(loc='upper right')
+def plot_EKF_covariance_envelope(results):
+    P_minus = results['P_minus']
+    P_plus  = results['P_plus']
+    t = results['t']
 
-#     axes[-1].set_xlabel('Time Step')
-#     plt.tight_layout()
+    N = len(t)
+    P_minus = P_minus[:N]
+    P_plus  = P_plus[:N]
 
-#     return fig
+    state_labels = [
+        'x (km)', 'y (km)', 'z (km)',
+        'vx (km/s)', 'vy (km/s)', 'vz (km/s)'
+    ]
+
+    colors = ['C2', 'C0', 'C3', 'C2', 'C0', 'C3']
+
+    fig1, axes = plt.subplots(3, 2, figsize=(10, 7), sharex=True)
+    axes = axes.flatten()
+
+    for i in range(6):
+        sig_m = np.sqrt(P_minus[:, i, i])
+        sig_p = np.sqrt(P_plus[:, i, i])
+        c = colors[i]
+
+        if i == 0:
+            axes[i].plot(t,  3*sig_m, color=c, linestyle='--', label='Pre ±3σ')
+            axes[i].plot(t, -3*sig_m, color=c, linestyle='--')
+
+            axes[i].plot(t,  3*sig_p, color=c, linestyle='-', label='Post ±3σ')
+            axes[i].plot(t, -3*sig_p, color=c, linestyle='-')
+        else:
+            axes[i].plot(t,  3*sig_m, color=c, linestyle='--')
+            axes[i].plot(t, -3*sig_m, color=c, linestyle='--')
+
+            axes[i].plot(t,  3*sig_p, color=c, linestyle='-')
+            axes[i].plot(t, -3*sig_p, color=c, linestyle='-')
+
+        axes[i].axhline(0, color='k', linewidth=0.5)
+        axes[i].set_ylabel(state_labels[i])
+        axes[i].grid(True)
+
+        if i >= 4:
+            axes[i].set_xlabel('Time [s]')
+
+    axes[0].legend(fontsize=9)
+    fig1.suptitle('EKF State Covariance: Pre vs Post ±3σ')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    fig2, ax = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+
+    for idx, lbl, ax_i in [
+        ([0, 1, 2], 'Position Uncertainty [km]', ax[0]),
+        ([3, 4, 5], 'Velocity Uncertainty [km/s]', ax[1])
+    ]:
+        for j in idx:
+            sig_m = np.sqrt(P_minus[:, j, j])
+            sig_p = np.sqrt(P_plus[:, j, j])
+            c = colors[j]
+
+            ax_i.plot(t,  3*sig_m, color=c, linestyle='--')
+            ax_i.plot(t, -3*sig_m, color=c, linestyle='--')
+
+            ax_i.plot(t,  3*sig_p, color=c, linestyle='-')
+            ax_i.plot(t, -3*sig_p, color=c, linestyle='-')
+
+        ax_i.set_ylabel(lbl)
+        ax_i.grid(True)
+
+    ax[1].set_xlabel('Time [s]')
+    ax[0].set_title('Position Uncertainty Components')
+    ax[1].set_title('Velocity Uncertainty Components')
+
+    from matplotlib.lines import Line2D
+
+    pos_legend = [
+    Line2D([0], [0], color='C2', lw=2, label='x'),
+    Line2D([0], [0], color='C0', lw=2, label='y'),
+    Line2D([0], [0], color='C3', lw=2, label='z')
+    ]
+
+    vel_legend = [
+        Line2D([0], [0], color='C2', lw=2, label='vx'),
+        Line2D([0], [0], color='C0', lw=2, label='vy'),
+        Line2D([0], [0], color='C3', lw=2, label='vz')
+    ]
+
+    ax[0].legend(handles=pos_legend, fontsize=9)
+    ax[1].legend(handles=vel_legend, fontsize=9)
+
+    plt.tight_layout()
+
+    return fig1, fig2
+

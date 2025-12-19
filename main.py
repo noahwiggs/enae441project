@@ -129,7 +129,7 @@ def main():
 
     #preliminary functions
     x_hat = oe_conversion(X_oe)
-    extract_present_data(raw_data)
+    #extract_present_data(raw_data)
 
     #Run BLLS to get better filter initialization
     x0_blls, P0_blls = initial_blls_guess(x_hat, raw_data)
@@ -138,22 +138,23 @@ def main():
     a = 1e-15 #micrometers/s^2
 
     R = np.array([[1e-3**2,0],
-                [0, 1e-5**2]])
+                  [0, 1e-5**2]])
 
     mu0 =x0_blls
 
     P0 = P0_blls
 
     #Run filters and plot results from filters
-    from EKF import run_EKF_prediction_only, plot_pure_prediction, plot_orbit_xy_samples, plot_prediction_covariance_envelope
-    results_prediction = run_EKF_prediction_only(raw_data, length, mu0, P0, mu, a)
-    plot_pure_prediction(results_prediction)
-    plot_orbit_xy_samples(results_prediction)
-    plot_prediction_covariance_envelope(results_prediction)
+    #from EKF import run_EKF_prediction_only, plot_pure_prediction, plot_orbit_xy_samples, plot_prediction_covariance_envelope
+    #results_prediction = run_EKF_prediction_only(raw_data, length, mu0, P0, mu, a)
+    #plot_pure_prediction(results_prediction)
+    #plot_orbit_xy_samples(results_prediction)
+    #plot_prediction_covariance_envelope(results_prediction)
 
-    # from EKF import run_EKF, plot_with_updates
-    # results_EKF = run_EKF(raw_data, length, mu0, P0, mu, a, R)
-    # plot_with_updates(results_EKF)
+    from EKF import run_EKF, plot_EKF_covariance_envelope
+    results_EKF = run_EKF(raw_data, length, mu0, P0, mu, a, R)
+    plot_EKF_covariance_envelope(results_EKF)
+    #plot_state_update_difference(results_EKF)
 
     plt.show()
 
