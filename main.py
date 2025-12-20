@@ -144,7 +144,7 @@ def main():
 
     P0 = P0_blls
 
-    #Run filters and plot results from filters
+    #Run filters and output Q3, 4, 5 results
     #from EKF import run_EKF_prediction_only, plot_pure_prediction, plot_orbit_xy_samples, plot_prediction_covariance_envelope
     #results_prediction = run_EKF_prediction_only(raw_data, length, mu0, P0, mu, a)
     #plot_pure_prediction(results_prediction)
@@ -153,8 +153,19 @@ def main():
 
     from EKF import run_EKF, plot_EKF_covariance_envelope, plot_EKF_state_update_difference
     results_EKF = run_EKF(raw_data, length, mu0, P0, mu, a, R)
-    plot_EKF_covariance_envelope(results_EKF)
-    plot_EKF_state_update_difference(results_EKF)
+    #plot_EKF_covariance_envelope(results_EKF)
+    #plot_EKF_state_update_difference(results_EKF)
+
+    from EKF import plot_postfit_residuals, plot_state_estimate_with_3sigma
+    plot_postfit_residuals(results_EKF)
+    plot_state_estimate_with_3sigma(results_EKF)
+    x_final = results_EKF['x_final']
+    P_final = results_EKF['P_final']
+    sigma_final = np.sqrt(np.diag(P_final))
+    print('Final state estimate:')
+    print(x_final)
+    print('Final 1-sigma uncertainty:')
+    print(sigma_final)
 
     plt.show()
 

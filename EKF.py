@@ -507,3 +507,55 @@ def plot_EKF_state_update_difference(results):
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     return fig
+
+def plot_postfit_residuals(results):
+    t = results['t']
+    r_post = results['residual_postfit']
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+
+    ax[0].plot(t, r_post[:, 0])
+    ax[0].set_ylabel('Range residual [km]')
+    ax[0].grid(True)
+
+    ax[1].plot(t, r_post[:, 1])
+    ax[1].set_ylabel('Range-rate residual [km/s]')
+    ax[1].set_xlabel('Time [s]')
+    ax[1].grid(True)
+
+    fig.suptitle('Post-Fit Measurement Residuals')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    return fig
+
+def plot_state_estimate_with_3sigma(results):
+    t = results['t']
+    mu = results['mu_plus']
+    P  = results['P_plus']
+
+    state_labels = [
+        'x (km)', 'y (km)', 'z (km)',
+        'vx (km/s)', 'vy (km/s)', 'vz (km/s)'
+    ]
+
+    fig, axes = plt.subplots(3, 2, figsize=(10, 7), sharex=True)
+    axes = axes.flatten()
+
+    for i in range(6):
+        sigma = np.sqrt(P[:, i, i])
+
+        axes[i].plot(t, mu[:, i])
+        axes[i].plot(t, mu[:, i] + 3*sigma, 'r--')
+        axes[i].plot(t, mu[:, i] - 3*sigma, 'r--')
+
+
+        axes[i].set_ylabel(state_labels[i])
+        axes[i].grid(True)
+
+        if i >= 4:
+            axes[i].set_xlabel('Time [s]')
+
+    fig.suptitle('EKF State Estimate with ±3σ Bounds')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    return fig
